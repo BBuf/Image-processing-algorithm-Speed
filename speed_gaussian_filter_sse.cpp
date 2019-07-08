@@ -56,7 +56,7 @@ void GaussBlurFromLeftToRight(float *Data, int Width, int Height, float B0, floa
 }
 
 void GaussBlurFromRightToLeft(float *Data, int Width, int Height, float B0, float B1, float B2, float B3) {
-	for (int Y = Height - 1; Y >= 0; Y--) {
+	for (int Y = 0; Y < Height; Y++) {
 		//w[n+1], w[n+2], w[n+3]
 		float *LinePD = Data + ((Y + 1) * (Width - 1) * 3);
 		float BS1 = LinePD[0], BS2 = LinePD[0], BS3 = LinePD[0];
