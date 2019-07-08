@@ -1,3 +1,11 @@
+#include "stdafx.h"
+#include <stdio.h>
+#include <cblas.h>
+#include <opencv2/opencv.hpp>
+
+using namespace std;
+using namespace cv;
+
 void CalcGaussCof(float Radius, float &B0, float &B1, float &B2, float &B3)
 {
 	float Q, B;
@@ -58,19 +66,20 @@ void GaussBlurFromLeftToRight(float *Data, int Width, int Height, float B0, floa
 void GaussBlurFromRightToLeft(float *Data, int Width, int Height, float B0, float B1, float B2, float B3) {
 	for (int Y = 0; Y < Height; Y++) {
 		//w[n+1], w[n+2], w[n+3]
-		float *LinePD = Data + ((Y + 1) * (Width - 1) * 3);
-		float BS1 = LinePD[0], BS2 = LinePD[0], BS3 = LinePD[0];
+		float *LinePD = Data + Y * Width * 3 + (Width * 3);
+		float BS1 = LinePD[2], BS2 = LinePD[2], BS3 = LinePD[2]; //边缘处使用重复像素的方案
 		float GS1 = LinePD[1], GS2 = LinePD[1], GS3 = LinePD[1];
-		float RS1 = LinePD[2], RS2 = LinePD[2], RS3 = LinePD[2];
-		for (int X = Width - 1; X >= 0; X--, LinePD -= 3) {
-			LinePD[0] = LinePD[0] * B0 + BS1 * B1 + BS2 * B2 + BS3 * B3;
-			LinePD[1] = LinePD[1] * B0 + GS1 * B1 + GS2 * B2 + GS3 * B3;         // 进行反向迭代
-			LinePD[2] = LinePD[2] * B0 + RS1 * B1 + RS2 * B2 + RS3 * B3;
+		float RS1 = LinePD[0], RS2 = LinePD[0], RS3 = LinePD[0];
+		for (int X = Width - 1; X >= 0; X--, LinePD -= 3)
+		{
+			LinePD[0] = LinePD[0] * B0 + BS3 * B1 + BS2 * B2 + BS1 * B3;
+			LinePD[1] = LinePD[1] * B0 + GS3 * B1 + GS2 * B2 + GS1 * B3;         // 进行反向迭代
+			LinePD[2] = LinePD[2] * B0 + RS3 * B1 + RS2 * B2 + RS1 * B3;
 			BS1 = BS2, BS2 = BS3, BS3 = LinePD[0];
 			GS1 = GS2, GS2 = GS3, GS3 = LinePD[1];
-			RS1 = RS2, RS2 = RS2, RS3 = LinePD[2];
+			RS1 = RS2, RS2 = RS3, RS3 = LinePD[2];
 		}
- 	}
+	}
 }
 
 //w[n] w[n-1], w[n-2], w[n-3]
@@ -146,4 +155,20 @@ void GaussBlur(unsigned char *Src, unsigned char *Dest, int Width, int Height, i
 	ConvertBGRAF2BGR8U(Buffer + 3 * Width * 3, Dest, Width, Height, Stride);
 
 	free(Buffer);
+}
+
+int main() {
+	Mat src = imread("F:\\3.jpg");
+	int Height = src.rows;
+	int Width = src.cols;
+	unsigned char *Src = src.data;
+	unsigned char *Dest = new unsigned char[Height * Width * 3];
+	int Stride = Width * 3;
+	int Radius = 0;
+	GaussBlur(Src, Dest, Width, Height, Stride, Radius);
+	Mat dst(Height, Width, CV_8UC3, Dest);
+	imshow("origin", src);
+	imshow("result", dst);
+	imwrite("F:\\res.jpg", dst);
+	waitKey(0);
 }
