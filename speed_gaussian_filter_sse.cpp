@@ -251,10 +251,8 @@ void GaussBlur(unsigned char *Src, unsigned char *Dest, int Width, int Height, i
 {
 	float B0, B1, B2, B3;
 	float *Buffer = (float *)malloc(Width * (Height + 6) * sizeof(float) * 3);
-
 	CalcGaussCof(Radius, B0, B1, B2, B3);
 	ConvertBGR8U2BGRAF(Src, Buffer + 3 * Width * 3, Width, Height, Stride);
-
 	GaussBlurFromLeftToRight(Buffer + 3 * Width * 3, Width, Height, B0, B1, B2, B3);
 	GaussBlurFromRightToLeft(Buffer + 3 * Width * 3, Width, Height, B0, B1, B2, B3);        //    如果启用多线程，建议把这个函数写到GaussBlurFromLeftToRight的for X循环里，因为这样就可以减少线程并发时的阻力
 
@@ -279,10 +277,8 @@ void GaussBlur_SSE(unsigned char *Src, unsigned char *Dest, int Width, int Heigh
 {
 	float B0, B1, B2, B3;
 	float *Buffer = (float *)_mm_malloc(Width * (Height + 6) * sizeof(float) * 4, 16);
-
 	CalcGaussCof(Radius, B0, B1, B2, B3);
 	ConvertBGR8U2BGRAF_SSE(Src, Buffer + 3 * Width * 4, Width, Height, Stride);
-
 	GaussBlurFromLeftToRight_SSE(Buffer + 3 * Width * 4, Width, Height, B0, B1, B2, B3);        //    在SSE版本中，这两个函数占用的时间比下面两个要多,不过C语言版本也是一样的
 	GaussBlurFromRightToLeft_SSE(Buffer + 3 * Width * 4, Width, Height, B0, B1, B2, B3);        //    如果启用多线程，建议把这个函数写到GaussBlurFromLeftToRight的for X循环里，因为这样就可以减少线程并发时的阻力
 
@@ -304,13 +300,19 @@ void GaussBlur_SSE(unsigned char *Src, unsigned char *Dest, int Width, int Heigh
 }
 
 int main() {
-	Mat src = imread("F:\\face.jpg");
+	Mat src = imread("F:\\car.jpg");
 	int Height = src.rows;
 	int Width = src.cols;
 	unsigned char *Src = src.data;
 	unsigned char *Dest = new unsigned char[Height * Width * 3];
 	int Stride = Width * 3;
-	int Radius = 3;
+	int Radius = 11;
+	int64 st = cvGetTickCount();
+	for (int i = 0; i < 20; i++) {
+		GaussBlur_SSE(Src, Dest, Width, Height, Stride, Radius);
+	}
+	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() *  50;
+	printf("%.5f\n", duration);
 	GaussBlur_SSE(Src, Dest, Width, Height, Stride, Radius);
 	Mat dst(Height, Width, CV_8UC3, Dest);
 	imshow("origin", src);
