@@ -212,9 +212,9 @@ void VibranceAlgorithm_SSE(unsigned char *Src, unsigned char *Dest, int Width, i
 			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(Green8, _mm_setr_epi8(-1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15, -1)));
 			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(Red8, _mm_setr_epi8(10, -1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15)));
 			
-			_mm_store_si128((__m128i *)(LinePD + 0), Dest1);
-			_mm_store_si128((__m128i *)(LinePD + 16), Dest2);
-			_mm_store_si128((__m128i *)(LinePD + 32), Dest3);
+			_mm_storeu_si128((__m128i *)(LinePD + 0), Dest1);
+			_mm_storeu_si128((__m128i *)(LinePD + 16), Dest2);
+			_mm_storeu_si128((__m128i *)(LinePD + 32), Dest3);
 		}
 		for (; X < Width; X ++) {
 			int Blue, Green, Red, Max;
@@ -254,12 +254,12 @@ int main() {
 	int Stride = Width * 3;
 	int Radius = 11;
 	int Adjustment = 50;
-	/*int64 st = cvGetTickCount();
+	int64 st = cvGetTickCount();
 	for (int i = 0; i <50; i++) {
 		VibranceAlgorithm_SSE(Src, Dest, Width, Height, Stride, Adjustment);
 	}
 	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 20;
-	printf("%.5f\n", duration);*/
+	printf("%.5f\n", duration);
 	VibranceAlgorithm_SSE(Src, Dest, Width, Height, Stride, Adjustment);
 	Mat dst(Height, Width, CV_8UC3, Dest);
 	imshow("origin", src);
