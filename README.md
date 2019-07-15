@@ -31,3 +31,4 @@
 |SSE优化+单线程|4032*3024|66.10ms|
 |SSE优化+4线程|4032*3024|66.20ms|
 
+- speed_vibrance_algorithm.cpp 使用SSE加速自然饱和度算法。
