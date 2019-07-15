@@ -1,3 +1,9 @@
+#include <stdio.h>
+#include <opencv2/opencv.hpp>
+
+using namespace std;
+using namespace cv;
+
 void GetGrayIntegralImage(unsigned char *Src, int *Integral, int Width, int Height, int Stride)
 {
 	memset(Integral, 0, (Width + 1) * sizeof(int));                    //    第一行都为0
@@ -15,7 +21,7 @@ void GetGrayIntegralImage(unsigned char *Src, int *Integral, int Width, int Heig
 	}
 }
 
-Mat GetGrayIntegralImage_SSE(unsigned char *Src, int *Integral, int Width, int Height, int Stride) {
+void GetGrayIntegralImage_SSE(unsigned char *Src, int *Integral, int Width, int Height, int Stride) {
 	memset(Integral, 0, (Width + 1) * sizeof(int)); //第一行都为0
 	int BlockSize = 8, Block = Width / BlockSize;
 	for (int Y = 0; Y < Height; Y++) {
@@ -50,4 +56,48 @@ Mat GetGrayIntegralImage_SSE(unsigned char *Src, int *Integral, int Width, int H
 			LinePD[X] = V + LinePL[X];
 		}
 	}
+}
+
+void BoxBlur(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride, int Radius) {
+	int *Integral = (int *)malloc((Width + 1) * (Height + 1) * sizeof(int));
+	GetGrayIntegralImage(Src, Integral, Width, Height, Stride);
+//#pragma parallel for num_threads(4)
+	for (int Y = 0; Y < Height; Y++) {
+		int Y1 = max(Y - Radius, 0);
+		int Y2 = min(Y + Radius + 1, Height - 1);
+		int *LineP1 = Integral + Y1 * (Width + 1);
+		int *LineP2 = Integral + Y2 * (Width + 1);
+		unsigned char *LinePD = Dest + Y * Stride;
+		for (int X = 0; X < Height; X++) {
+			int X1 = max(X - Radius, 0);
+			int X2 = min(X + Radius + 1, Width);
+			int Sum = LineP2[X2] - LineP1[X2] - LineP2[X1] + LineP1[X1];
+			int PixelCount = (X2 - X1) * (Y2 - Y1);
+			LinePD[X] = (Sum + (PixelCount >> 1)) / PixelCount;
+		}
+	}
+	free(Integral);
+}
+
+int main() {
+	Mat src = imread("F:\\car.jpg", 0);
+	int Height = src.rows;
+	int Width = src.cols;
+	unsigned char *Src = src.data;
+	unsigned char *Dest = new unsigned char[Height * Width];
+	int Stride = Width;
+	int Radius = 11;
+	int64 st = cvGetTickCount();
+	for (int i = 0; i < 10; i++) {
+		BoxBlur(Src, Dest, Width, Height, Stride, Radius);
+	}
+	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
+	printf("%.5f\n", duration);
+	BoxBlur(Src, Dest, Width, Height, Stride, Radius);
+	Mat dst(Height, Width, CV_8UC1, Dest);
+	imshow("origin", src);
+	imshow("result", dst);
+	imwrite("F:\\res.jpg", dst);
+	waitKey(0);
+	waitKey(0);
 }

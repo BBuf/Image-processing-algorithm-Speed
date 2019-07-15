@@ -1,3 +1,9 @@
+#include <stdio.h>
+#include <opencv2/opencv.hpp>
+
+using namespace std;
+using namespace cv;
+
 //1920 * 1080 3.71ms
 void RGB2Y_1(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
 	const int B_WT = int(0.114 * 256 + 0.5);
@@ -26,7 +32,7 @@ void RGB2Y_2(unsigned char *Src, unsigned char *Dest, int Width, int Height, int
 			LinePD[X + 1] = (B_WT * LinePS[3] + G_WT * LinePS[4] + R_WT * LinePS[5]) >> 8;
 			LinePD[X + 2] = (B_WT * LinePS[6] + G_WT * LinePS[7] + R_WT * LinePS[8]) >> 8;
 			LinePD[X + 3] = (B_WT * LinePS[9] + G_WT * LinePS[10] + R_WT * LinePS[11]) >> 8;
- 		}
+		}
 		for (; X < Width; X++, LinePS += 3) {
 			LinePD[X] = (B_WT * LinePS[0] + G_WT * LinePS[1] + R_WT * LinePS[2]) >> 8;
 		}
@@ -81,4 +87,27 @@ void RGB2Y_3(unsigned char *Src, unsigned char *Dest, int Width, int Height, int
 			LinePD[X] = (B_WT * LinePS[0] + G_WT * LinePS[1] + R_WT * LinePS[2]) >> 8;
 		}
 	}
+}
+
+int main() {
+	Mat src = imread("F:\\car.jpg");
+	int Height = src.rows;
+	int Width = src.cols;
+	unsigned char *Src = src.data;
+	unsigned char *Dest = new unsigned char[Height * Width];
+	int Stride = Width * 3;
+	int Radius = 11;
+	int64 st = cvGetTickCount();
+	for (int i = 0; i < 10; i++) {
+		RGB2Y_3(Src, Dest, Width, Height, Stride);
+	}
+	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
+	printf("%.5f\n", duration);
+	RGB2Y_3(Src, Dest, Width, Height, Stride);
+	Mat dst(Height, Width, CV_8UC1, Dest);
+	imshow("origin", src);
+	imshow("result", dst);
+	imwrite("F:\\res.jpg", dst);
+	waitKey(0);
+	waitKey(0);
 }
