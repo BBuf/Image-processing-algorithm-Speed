@@ -39,7 +39,7 @@
 |浮点数改成整形运算+单线程|4032*3024|36.30ms|
 |SSE优化+单线程|4032*3024|8.72ms|
 
-- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://www.cnblogs.com/Imageshop/p/7285564.html 。速度测试结果如下：
+- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96282437 。速度测试结果如下：
 
 |优化方式|图像分辨率 |速度|
 |---------|----------|-------|
