@@ -8,17 +8,19 @@ using namespace cv;
 #define IM_Min(a, b) (((a) >= (b)) ? (b): (a))
 #define _mm_cmpge_epu8(a, b) _mm_cmpeq_epi8(_mm_max_epu8(a, b), a)
 
-void IM_GetRoughSkinRegion(unsigned char *Src, unsigned char *Skin, int Width, int Height, int Stride) {
-	for (int Y = 0; Y < Height; Y++) {
-		unsigned char *LinePS = Src + Y * Stride;
-		unsigned char *LinePD = Skin + Y * Stride;
-		for(int X = 0; X < Width; X++) {
+void IM_GetRoughSkinRegion(unsigned char *Src, unsigned char *Skin, int Width, int Height, int Stride){
+	for (int Y = 0; Y < Height; Y++)
+	{
+		unsigned char *LinePS = Src + Y * Stride;                    
+		unsigned char *LinePD = Skin + Y * Width;                   
+		for (int X = 0; X < Width; X++)
+		{
 			int Blue = LinePS[0], Green = LinePS[1], Red = LinePS[2];
-			if (Red >= 60 && Green >= 40 && Blue >= 20 && Red >= Blue && (Red - Green) >= 10 && IM_Max(IM_Max(Red, Green), Blue) - IM_Min(IM_Min(Red, Green), Blue) >= 10) {
-				LinePD[X] = 255;
-			}
+			if (Red >= 60 && Green >= 40 && Blue >= 20 && Red >= Blue && (Red - Green) >= 10 && IM_Max(IM_Max(Red, Green), Blue) - IM_Min(IM_Min(Red, Green), Blue) >= 10)
+				LinePD[X] = 255;                                                                                                            
 			else
 				LinePD[X] = 16;
+			LinePS += 3;                                              
 		}
 	}
 }
