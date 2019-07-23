@@ -1,4 +1,5 @@
 # Introduction
+
 #### PC的CPU为I7-8770，64位。
 
 #### 速度测试时，跑了50个loop。
@@ -55,3 +56,4 @@
 |SSE优化+单线程|4272*2848|4.22|
 
 - speed_common_functions.cpp 对图像处理的一些常用函数的快速实现，个别使用了SSE优化。
+- speed_max_filter_sse 搭建了一个任意半径局部直方图类算法在PC中快速实现的框架，并以Max_Filter为例。
