@@ -1,5 +1,9 @@
 # Introduction
 
+## speed_histogram_algorithm_framework 
+
+- 局部直方图加速框架，内部使用了一些近似计算及指令集加速(SSE)，可以快速处理中值滤波、最大值滤波、最小值滤波、表面模糊等算法。
+
 #### PC的CPU为I7-8770，64位。
 
 #### 速度测试时，跑了50个loop。
@@ -56,4 +60,8 @@
 |SSE优化+单线程|4272*2848|4.22|
 
 - speed_common_functions.cpp 对图像处理的一些常用函数的快速实现，个别使用了SSE优化。
-- speed_max_filter_sse 搭建了一个任意半径局部直方图类算法在PC中快速实现的框架，并以Max_Filter为例。
+- speed_max_filter_sse.cpp 使用speed_histogram_algorithm_framework框架实现最大值滤波。运行的时候记得把工程属性中的sdl检查关掉，不然会报一个变量未初始化的错误。速度测试效果如下:
+|优化方式|图像分辨率 |速度|
+|---------|----------|-------|
+|C语言实现+单线程|4272*2848||
+|SSE优化+单线程|4272*2848||
