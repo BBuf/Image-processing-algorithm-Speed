@@ -304,58 +304,72 @@ void CopyAlphaChannel(TMatrix *Src, TMatrix *Dest) {
 // RawPos: 保存行方向的有理坐标值
 // ColPos: 保存列方向的有理坐标值
 // 返回函数是执行成功
-IS_RET GetValidCoordinate(int Width, int Height, int Left, int Right, int Top, int Bottom, EdgeMode Edge, TMatrix **Row, TMatrix **Col) {
-	if((Left < 0) || (Right < 0) || (Top < 0) || (Bottom < 0)) return IS_RET_ERR_ARGUMENTOUTOFRANGE;
+IS_RET GetValidCoordinate(int Width, int Height, int Left, int Right, int Top, int Bottom, EdgeMode Edge, TMatrix **Row, TMatrix **Col)
+{
+	if ((Left < 0) || (Right < 0) || (Top < 0) || (Bottom < 0)) return IS_RET_ERR_ARGUMENTOUTOFRANGE;
 	IS_RET Ret = IS_CreateMatrix(Width + Left + Right, 1, IS_DEPTH_32S, 1, Row);
 	if (Ret != IS_RET_OK) return Ret;
 	Ret = IS_CreateMatrix(1, Height + Top + Bottom, IS_DEPTH_32S, 1, Col);
 	if (Ret != IS_RET_OK) return Ret;
-	int X, Y, XX, YY, *RowPos = (int *)(*Row)->Data, *ColPos = (int*)(*Col)->Data;
-	for (X = -Left; X < Width + Right; X++) {
-		if (X < 0) {
-			if (Edge == EdgeMode::Tile) { //重复边缘像素
+
+	int X, Y, XX, YY, *RowPos = (int *)(*Row)->Data, *ColPos = (int *)(*Col)->Data;
+
+	for (X = -Left; X < Width + Right; X++)
+	{
+		if (X < 0)
+		{
+			if (Edge == EdgeMode::Tile)							//重复边缘像素
 				RowPos[X + Left] = 0;
-			}
-			else {
+			else
+			{
 				XX = -X;
-				while (XX >= Width) XX -= Width;
+				while (XX >= Width) XX -= Width;			// 做镜像数据
 				RowPos[X + Left] = XX;
 			}
 		}
-		else if (X >= Width) {
-			if (Edge == EdgeMode::Tile) {
-				RowPos[X + Left] = 0;
-			}
-			else {
-				XX = -X;
-				while (XX >= Width) XX -= Width; //做镜像数据
+		else if (X >= Width)
+		{
+			if (Edge == EdgeMode::Tile)
+				RowPos[X + Left] = Width - 1;
+			else
+			{
+				XX = Width - (X - Width + 2);
+				while (XX < 0) XX += Width;
 				RowPos[X + Left] = XX;
 			}
 		}
-		else {
+		else
+		{
 			RowPos[X + Left] = X;
 		}
 	}
-	for (Y = -Top; Y < Height + Bottom; Y++) {
-		if (Y < 0) {
+
+	for (Y = -Top; Y < Height + Bottom; Y++)
+	{
+		if (Y < 0)
+		{
 			if (Edge == EdgeMode::Tile)
 				ColPos[Y + Top] = 0;
-			else {
+			else
+			{
 				YY = -Y;
 				while (YY >= Height) YY -= Height;
 				ColPos[Y + Top] = YY;
 			}
 		}
-		else if (Y >= Height) {
+		else if (Y >= Height)
+		{
 			if (Edge == EdgeMode::Tile)
 				ColPos[Y + Top] = Height - 1;
-			else {
+			else
+			{
 				YY = Height - (Y - Height + 2);
 				while (YY < 0) YY += Height;
 				ColPos[Y + Top] = YY;
 			}
 		}
-		else {
+		else
+		{
 			ColPos[Y + Top] = Y;
 		}
 	}

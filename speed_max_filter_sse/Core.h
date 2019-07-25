@@ -10,6 +10,7 @@ using namespace std;
 const float Inv255 = 1.0 / 255;
 const double Eps = 2.220446049250313E-16;
 
+
 //边缘填充的方式
 enum EdgeMode {
 	Tile = 0, //重复边缘元素
@@ -53,7 +54,7 @@ struct TMatrix
 };
 
 // 内存申请
-void *IS_AllocMemory(unsigned int Size, bool ZeroMemory=true) {
+void *IS_AllocMemory(unsigned int Size, bool ZeroMemory = true) {
 	void *Ptr = _mm_malloc(Size, 32);
 	if (Ptr != NULL)
 		if (ZeroMemory == true)
@@ -99,17 +100,17 @@ int IS_ELEMENT_SIZE(int Depth) {
 //创建新的矩阵数据
 IS_RET IS_CreateMatrix(int Width, int Height, int Depth, int Channel, TMatrix **Matrix) {
 	if (Width < 1 || Height < 1) return IS_RET_ERR_ARGUMENTOUTOFRANGE; //参数不在正常范围内
-	if (Depth != IS_DEPTH_8U && Depth != IS_DEPTH_8S && Depth != IS_DEPTH_16S && Depth != IS_DEPTH_32S && 
+	if (Depth != IS_DEPTH_8U && Depth != IS_DEPTH_8S && Depth != IS_DEPTH_16S && Depth != IS_DEPTH_32S &&
 		Depth != IS_DEPTH_32F && Depth != IS_DEPTH_64F) return IS_RET_ERR_ARGUMENTOUTOFRANGE; //参数不在正常范围内
 	if (Channel != 1 && Channel != 2 && Channel != 3 && Channel != 4) return IS_RET_ERR_ARGUMENTOUTOFRANGE;
-	*Matrix = (TMatrix *)IS_AllocMemory(sizeof(TMatrix)); 
+	*Matrix = (TMatrix *)IS_AllocMemory(sizeof(TMatrix));
 	(*Matrix)->Width = Width;
 	(*Matrix)->Height = Height;
 	(*Matrix)->Depth = Depth;
 	(*Matrix)->Channel = Channel;
 	(*Matrix)->WidthStep = WIDTHBYTES(Width * Channel * IS_ELEMENT_SIZE(Depth));
 	(*Matrix)->Data = (unsigned char*)IS_AllocMemory((*Matrix)->Height * (*Matrix)->WidthStep, true);
-	if ((*Matrix)->Reserved == NULL) {
+	if ((*Matrix)->Data == NULL) {
 		IS_FreeMemory(*Matrix);
 		return IS_RET_ERR_OUTOFMEMORY; //内存溢出
 	}
@@ -139,4 +140,3 @@ IS_RET IS_CloneMatrix(TMatrix *Src, TMatrix **Dest) {
 	if (Ret == IS_RET_OK) memcpy((*Dest)->Data, Src->Data, (*Dest)->Height * (*Dest)->WidthStep);
 	return Ret;
 }
-
