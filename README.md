@@ -73,4 +73,13 @@
 |C语言实现+单线程|4272*2848|11|23069.10ms|
 |SSE优化+单线程|4272*2848|11|2180.95ms|
 
-- speed_box_filter_sse.cpp 使用speed_histogram_algorithm框架实现最大值滤波，使用了SSE优化，未使用直方图优化，所以算法速度仍与半径相关。运行方法和speed_max_filter_sse.cpp相同，速度测试结果如下：
+- speed_box_filter_sse.cpp 使用speed_histogram_algorithm框架实现O(1)最大值滤波，使用了SSE优化，算法原理请看：https://blog.csdn.net/just_sort/article/details/98075712。运行方法和speed_max_filter_sse.cpp相同，速度测试结果如下：
+|优化方式|图像分辨率 |半径|速度|
+|---------|----------|-------|-------|
+|C语言实现+单线程|4272*2848|11||
+|SSE优化+单线程|4272*2848|11||
+|C语言实现+单线程|4272*2848|31||
+|SSE优化+单线程|4272*2848|31||
+|C语言实现+单线程|4272*2848|91||
+|SSE优化+单线程|4272*2848|91||
+
