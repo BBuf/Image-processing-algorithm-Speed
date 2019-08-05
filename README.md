@@ -84,14 +84,13 @@
 |C语言实现+单线程|4272*2848|31|168.62|
 |SSE优化+单线程|4272*2848|31|126.17|
 
-- speed_multi_scale_detail_boosting_see.cpp 在speed_box_filter_sse.cpp提供的盒子滤波sse优化的基础上，进一步使用指令集实现了对论文《DARK IMAGE ENHANCEMENT BASED ON PAIRWISE TARGET CONTRAST AND MULTI-SCALE DETAIL BOOSTING》的算法优化。算法原理请看： 。速度测试结果如下：
+- speed_multi_scale_detail_boosting_see.cpp 在speed_box_filter_sse.cpp提供的盒子滤波sse优化的基础上，进一步使用指令集实现了对论文《DARK IMAGE ENHANCEMENT BASED ON PAIRWISE TARGET CONTRAST AND MULTI-SCALE DETAIL BOOSTING》的算法优化。算法原理请看：https://blog.csdn.net/just_sort/article/details/98485746  。速度测试结果如下：
 
 |优化方式|图像分辨率 |半径|速度|
 |---------|----------|-------|-------|
-|C语言实现+单线程|4272*2848|7||
-|SSE优化+单线程|4272*2848|7||
-|C语言实现+单线程|4272*2848|9||
-|SSE优化+单线程|4272*2848|9||
-|C语言实现+单线程|4272*2848|11||
-|SSE优化+单线程|4272*2848|11||
-
+|C语言实现+单线程|4272*2848|7|118.58|
+|SSE优化+单线程|4272*2848|7|49.72|
+|C语言实现+单线程|4272*2848|9|118.98|
+|SSE优化+单线程|4272*2848|9|50.28|
+|C语言实现+单线程|4272*2848|11|118.64|
+|SSE优化+单线程|4272*2848|11|49.92|
