@@ -84,7 +84,7 @@ void MedianBlur3X3_Faster(unsigned char *Src, unsigned char *Dest, int Width, in
 			for (int X = 1; X < Width - 1; X++){
 				int Gray0, Gray1, Gray2, Gray3, Gray4, Gray5, Gray6, Gray7, Gray8;
 				Gray0 = LineP0[X - 1];        Gray1 = LineP0[X];    Gray2 = LineP0[X + 1];
-				Gray3 = LineP1[X - 1];        Gray4 = LineP1[X];    Gray5 = LineP2[X + 1];
+				Gray3 = LineP1[X - 1];        Gray4 = LineP1[X];    Gray5 = LineP1[X + 1];
 				Gray6 = LineP2[X - 1];        Gray7 = LineP2[X];    Gray8 = LineP2[X + 1];
 
 				if (Gray1 > Gray2) Swap(Gray1, Gray2);
@@ -222,7 +222,8 @@ void MedianBlur3X3_Fastest(unsigned char *Src, unsigned char *Dest, int Width, i
 		unsigned char *LineP1 = LineP0 + Stride;
 		unsigned char *LineP2 = LineP1 + Stride;
 		unsigned char *LinePD = Dest + Y * Stride + Channel;
-		for (int X = 0; X < Block * BlockSize; X += BlockSize, LineP0 += BlockSize, LineP1 += BlockSize, LineP2 += BlockSize, LinePD += BlockSize){
+		for (int X = 0; X < Block * BlockSize; X += BlockSize, LineP0 += BlockSize, LineP1 += BlockSize, LineP2 += BlockSize, LinePD += BlockSize)
+		{
 			__m128i P0 = _mm_loadu_si128((__m128i *)(LineP0 - Channel));
 			__m128i P1 = _mm_loadu_si128((__m128i *)(LineP0 - 0));
 			__m128i P2 = _mm_loadu_si128((__m128i *)(LineP0 + Channel));
@@ -233,21 +234,22 @@ void MedianBlur3X3_Fastest(unsigned char *Src, unsigned char *Dest, int Width, i
 			__m128i P7 = _mm_loadu_si128((__m128i *)(LineP2 - 0));
 			__m128i P8 = _mm_loadu_si128((__m128i *)(LineP2 + Channel));
 
-			_mm_sort_ab(P1, P2);        _mm_sort_ab(P4, P5);        _mm_sort_ab(P7, P8);
-			_mm_sort_ab(P0, P1);        _mm_sort_ab(P3, P4);        _mm_sort_ab(P6, P7);
-			_mm_sort_ab(P1, P2);        _mm_sort_ab(P4, P5);        _mm_sort_ab(P7, P8);
-			_mm_sort_ab(P0, P3);        _mm_sort_ab(P5, P8);        _mm_sort_ab(P4, P7);
-			_mm_sort_ab(P3, P6);        _mm_sort_ab(P1, P4);        _mm_sort_ab(P2, P5);
-			_mm_sort_ab(P4, P7);        _mm_sort_ab(P4, P2);        _mm_sort_ab(P6, P4);
+			_mm_sort_ab(P1, P2);		_mm_sort_ab(P4, P5);		_mm_sort_ab(P7, P8);
+			_mm_sort_ab(P0, P1);		_mm_sort_ab(P3, P4);		_mm_sort_ab(P6, P7);
+			_mm_sort_ab(P1, P2);		_mm_sort_ab(P4, P5);		_mm_sort_ab(P7, P8);
+			_mm_sort_ab(P0, P3);		_mm_sort_ab(P5, P8);		_mm_sort_ab(P4, P7);
+			_mm_sort_ab(P3, P6);		_mm_sort_ab(P1, P4);		_mm_sort_ab(P2, P5);
+			_mm_sort_ab(P4, P7);		_mm_sort_ab(P4, P2);		_mm_sort_ab(P6, P4);
 			_mm_sort_ab(P4, P2);
 
 			_mm_storeu_si128((__m128i *)LinePD, P4);
 		}
+		
 		for (int X = Block * BlockSize; X < (Width - 2) * Channel; X++, LinePD++){
 			int Gray0, Gray1, Gray2, Gray3, Gray4, Gray5, Gray6, Gray7, Gray8;
-			Gray0 = LineP0[X - 1];        Gray1 = LineP0[X];    Gray2 = LineP0[X + 1];
-			Gray3 = LineP1[X - 1];        Gray4 = LineP1[X];    Gray5 = LineP2[X + 1];
-			Gray6 = LineP2[X - 1];        Gray7 = LineP2[X];    Gray8 = LineP2[X + 1];
+			Gray0 = LineP0[X - Block * BlockSize - Channel];        Gray1 = LineP0[X - Block * BlockSize];    Gray2 = LineP0[X - Block * BlockSize + Channel];
+			Gray3 = LineP1[X - Block * BlockSize - Channel];        Gray4 = LineP1[X - Block * BlockSize];    Gray5 = LineP1[X - Block * BlockSize + Channel];
+			Gray6 = LineP2[X - Block * BlockSize - Channel];        Gray7 = LineP2[X - Block * BlockSize];    Gray8 = LineP2[X - Block * BlockSize + Channel];
 
 			if (Gray1 > Gray2) Swap(Gray1, Gray2);
 			if (Gray4 > Gray5) Swap(Gray4, Gray5);
@@ -270,6 +272,9 @@ void MedianBlur3X3_Fastest(unsigned char *Src, unsigned char *Dest, int Width, i
 			if (Gray4 > Gray2) Swap(Gray4, Gray2);
 
 			LinePD[X] = Gray4;
+			LineP0 += 1;
+			LineP1 += 1;
+			LineP2 += 1;
 		}
 	}
 }
@@ -285,7 +290,7 @@ int main() {
 	int64 st = cvGetTickCount();
 	for (int i = 0; i <10; i++) {
 		//Mat temp = MaxFilter(src, Radius);
-		MedianBlur3X3_Ori(Src, Dest, Width, Height, Stride);
+		MedianBlur3X3_Fastest(Src, Dest, Width, Height, Stride);
 	}
 	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
 	printf("%.5f\n", duration);
