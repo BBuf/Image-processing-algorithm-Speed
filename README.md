@@ -17,6 +17,7 @@
 
 ![](image/peizhi.jpg)
 
+- sse_implementation_of_common_functions_in_image_processing.cpp 多个图像处理中常用函数的SSE实现。
 - speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有2-3倍加速。算法原理：https://blog.csdn.net/just_sort/article/details/94456945 。速度测试结果如下：
 
 |优化方式|图像分辨率|速度|
@@ -102,4 +103,3 @@
 |C语言实现+优化排序|4272*2848|3|749.43|
 |SSE优化|4272*2848|3|10.26|
 |OpenCV3.1.0自带的函数|4272*2848|3|100.09|
-
