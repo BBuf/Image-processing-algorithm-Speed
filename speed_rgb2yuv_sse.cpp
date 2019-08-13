@@ -16,7 +16,7 @@ inline unsigned char ClampToByte(int Value){
 
 void RGBToYUV(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsigned char *V, int Width, int Height, int Stride)
 {
-	const int Shift = 15;
+	const int Shift = 13;
 	const int HalfV = 1 << (Shift - 1);
 	const int Y_B_WT = 0.114f * (1 << Shift), Y_G_WT = 0.587f * (1 << Shift), Y_R_WT = (1 << Shift) - Y_B_WT - Y_G_WT;
 	const int U_B_WT = 0.436f * (1 << Shift), U_G_WT = -0.28886f * (1 << Shift), U_R_WT = -(U_B_WT + U_G_WT);
@@ -38,7 +38,7 @@ void RGBToYUV(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsigned c
 }
 
 void RGBToYUVSSE_1(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsigned char *V, int Width, int Height, int Stride) {
-	const int Shift = 15;
+	const int Shift = 13;
 	const int HalfV = 1 << (Shift - 1);
 	const int Y_B_WT = 0.114f * (1 << Shift), Y_G_WT = 0.587f * (1 << Shift), Y_R_WT = (1 << Shift) - Y_B_WT - Y_G_WT;
 	const int U_B_WT = 0.436f * (1 << Shift), U_G_WT = -0.28886f * (1 << Shift), U_R_WT = -(U_B_WT + U_G_WT);
@@ -132,7 +132,7 @@ void RGBToYUVSSE_1(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsig
 
 void RGBToYUVSSE_2(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsigned char *V, int Width, int Height, int Stride)
 {
-	const int Shift = 15;                            //    这里没有绝对值大于1的系数，最大可取2^15次方的放大倍数。
+	const int Shift = 13;                            //    这里没有绝对值大于1的系数，最大可取2^15次方的放大倍数。
 	const int HalfV = 1 << (Shift - 1);
 
 	const int Y_B_WT = 0.114f * (1 << Shift), Y_G_WT = 0.587f * (1 << Shift), Y_R_WT = (1 << Shift) - Y_B_WT - Y_G_WT, Y_C_WT = 1;
@@ -243,7 +243,7 @@ void RGBToYUVSSE_2(unsigned char *RGB, unsigned char *Y, unsigned char *U, unsig
 
 void YUVToRGB(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned char *RGB, int Width, int Height, int Stride)
 {
-	const int Shift = 15;
+	const int Shift = 13;
 	const int HalfV = 1 << (Shift - 1);
 	const int B_Y_WT = 1 << Shift, B_U_WT = 2.03211f * (1 << Shift), B_V_WT = 0;
 	const int G_Y_WT = 1 << Shift, G_U_WT = -0.39465f * (1 << Shift), G_V_WT = -0.58060f * (1 << Shift);
@@ -264,52 +264,28 @@ void YUVToRGB(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned cha
 	}
 }
 
-void YUVToRGBSSE_1(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned char *RGB, int Width, int Height, int Stride) {
-	const int Shift = 13;
-	const int HalfV = 1 << (Shift - 1);
-	const int B_Y_WT = 1 << Shift, B_U_WT = 2.03211f * (1 << Shift), B_V_WT = 0;
-	const int G_Y_WT = 1 << Shift, G_U_WT = -0.39465f * (1 << Shift), G_V_WT = -0.58060f * (1 << Shift);
-	const int R_Y_WT = 1 << Shift, R_U_WT = 0, R_V_WT = 1.13983 * (1 << Shift);
-	__m128i Zero = _mm_setzero_si128();
-
-	const int BlockSize = 16, Block = Width / BlockSize;
-	for (int YY = 0; YY < Height; YY++) {
-		unsigned char *LinePD = RGB + YY * Stride;
-		unsigned char *LinePY = Y + YY * Width;
-		unsigned char *LinePU = U + YY * Width;
-		unsigned char *LinePV = V + YY * Width;
-		for (int XX = 0; XX < Block * BlockSize; XX += BlockSize, LinePY += BlockSize, LinePU += BlockSize, LinePV += BlockSize) {
-			__m128i Dst1, Dst2, Dst3, YV, UV, VV;
-			YV = _mm_loadu_si128((__m128i *)(LinePY + 0));
-			UV = _mm_loadu_si128((__m128i *)(LinePU + 0));
-			VV = _mm_loadu_si128((__m128i *)(LinePV + 0));
-			
-			__m128i YV16L = _mm_unpacklo_epi8(YV, Zero);
-			__m128i YV16H = _mm_unpackhi_epi8(YV, Zero);
-			__m128i YV32LL = _mm_unpacklo_epi16(YV16L, Zero);
-			__m128i YV32LH = _mm_unpackhi_epi16(YV16L, Zero);
-			__m128i YV32HL = _mm_unpacklo_epi16(YV16H, Zero);
-			__m128i YV32HH = _mm_unpackhi_epi16(YV16H, Zero);
-
-			__m128i UV16L = _mm_unpacklo_epi8(UV, Zero);
-			__m128i UV16H = _mm_unpackhi_epi8(UV, Zero);
-			__m128i UV32LL = _mm_unpacklo_epi16(UV16L, Zero);
-			__m128i UV32LH = _mm_unpackhi_epi16(UV16L, Zero);
-			__m128i UV32HL = _mm_unpacklo_epi16(UV16H, Zero);
-			__m128i UV32HH = _mm_unpackhi_epi16(UV16H, Zero);
-
-			__m128i VV16L = _mm_unpacklo_epi8(VV, Zero);
-			__m128i VV16H = _mm_unpackhi_epi8(VV, Zero);
-			__m128i VV32LL = _mm_unpacklo_epi16(VV16L, Zero);
-			__m128i VV32LH = _mm_unpackhi_epi16(VV16L, Zero);
-			__m128i VV32HL = _mm_unpacklo_epi16(VV16H, Zero);
-			__m128i VV32HH = _mm_unpackhi_epi16(VV16H, Zero);
-
-
-		}
-	}
-}
-
 int main() {
-
+	Mat src = imread("F:\\car.jpg");
+	int Height = src.rows;
+	int Width = src.cols;
+	unsigned char *Src = src.data;
+	unsigned char *Dest = new unsigned char[Height * Width * 3];
+	unsigned char *Y = new unsigned char[Height * Width];
+	unsigned char *U = new unsigned char[Height * Width];
+	unsigned char *V = new unsigned char[Height * Width];
+	int Stride = Width * 3;
+	int Radius = 11;
+	int64 st = cvGetTickCount();
+	/*for (int i = 0; i < 10; i++) {
+		RGBToYUV(Src, Y, U, V, Width, Height, Stride);
+	}*/
+	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
+	printf("%.5f\n", duration);
+	RGBToYUVSSE_2(Src, Y, U, V, Width, Height, Stride);
+	YUVToRGB(Y, U, V, Dest, Width, Height, Stride);
+	Mat dst(Height, Width, CV_8UC3, Dest);
+	imshow("origin", src);
+	imshow("result", dst);
+	imwrite("F:\\res.jpg", dst);
+	waitKey(0);
 }
