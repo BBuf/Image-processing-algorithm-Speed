@@ -264,6 +264,112 @@ void YUVToRGB(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned cha
 	}
 }
 
+void YUVToRGBSSE_1(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned char *RGB, int Width, int Height, int Stride) {
+	const int Shift = 13;
+	const int HalfV = 1 << (Shift - 1);
+	const int B_Y_WT = 1 << Shift, B_U_WT = 2.03211f * (1 << Shift), B_V_WT = 0;
+	const int G_Y_WT = 1 << Shift, G_U_WT = -0.39465f * (1 << Shift), G_V_WT = -0.58060f * (1 << Shift);
+	const int R_Y_WT = 1 << Shift, R_U_WT = 0, R_V_WT = 1.13983 * (1 << Shift);
+	__m128i Weight_B_Y = _mm_set1_epi32(B_Y_WT), Weight_B_U = _mm_set1_epi32(B_U_WT), Weight_B_V = _mm_set1_epi32(B_V_WT);
+	__m128i Weight_G_Y = _mm_set1_epi32(G_Y_WT), Weight_G_U = _mm_set1_epi32(G_U_WT), Weight_G_V = _mm_set1_epi32(G_V_WT);
+	__m128i Weight_R_Y = _mm_set1_epi32(R_Y_WT), Weight_R_U = _mm_set1_epi32(R_U_WT), Weight_R_V = _mm_set1_epi32(R_V_WT);
+	__m128i Half = _mm_set1_epi32(HalfV);
+	__m128i C128 = _mm_set1_epi32(128);
+	__m128i Zero = _mm_setzero_si128();
+
+	const int BlockSize = 16, Block = Width / BlockSize;
+	for (int YY = 0; YY < Height; YY++) {
+		unsigned char *LinePD = RGB + YY * Stride;
+		unsigned char *LinePY = Y + YY * Width;
+		unsigned char *LinePU = U + YY * Width;
+		unsigned char *LinePV = V + YY * Width;
+		for (int XX = 0; XX < Block * BlockSize; XX += BlockSize, LinePY += BlockSize, LinePU += BlockSize, LinePV += BlockSize) {
+			__m128i Blue, Green, Red, YV, UV, VV, Dest1, Dest2, Dest3;
+			YV = _mm_loadu_si128((__m128i *)(LinePY + 0));
+			UV = _mm_loadu_si128((__m128i *)(LinePU + 0));
+			VV = _mm_loadu_si128((__m128i *)(LinePV + 0));
+			//UV = _mm_sub_epi32(UV, C128);
+			//VV = _mm_sub_epi32(VV, C128);
+
+			__m128i YV16L = _mm_unpacklo_epi8(YV, Zero);
+			__m128i YV16H = _mm_unpackhi_epi8(YV, Zero);
+			__m128i YV32LL = _mm_unpacklo_epi16(YV16L, Zero);
+			__m128i YV32LH = _mm_unpackhi_epi16(YV16L, Zero);
+			__m128i YV32HL = _mm_unpacklo_epi16(YV16H, Zero);
+			__m128i YV32HH = _mm_unpackhi_epi16(YV16H, Zero);
+
+
+			__m128i UV16L = _mm_unpacklo_epi8(UV, Zero);
+			__m128i UV16H = _mm_unpackhi_epi8(UV, Zero);
+			__m128i UV32LL = _mm_unpacklo_epi16(UV16L, Zero);
+			__m128i UV32LH = _mm_unpackhi_epi16(UV16L, Zero);
+			__m128i UV32HL = _mm_unpacklo_epi16(UV16H, Zero);
+			__m128i UV32HH = _mm_unpackhi_epi16(UV16H, Zero);
+			UV32LL = _mm_sub_epi32(UV32LL, C128);
+			UV32LH = _mm_sub_epi32(UV32LH, C128);
+			UV32HL = _mm_sub_epi32(UV32HL, C128);
+			UV32HH = _mm_sub_epi32(UV32HH, C128);
+
+			__m128i VV16L = _mm_unpacklo_epi8(VV, Zero);
+			__m128i VV16H = _mm_unpackhi_epi8(VV, Zero);
+			__m128i VV32LL = _mm_unpacklo_epi16(VV16L, Zero);
+			__m128i VV32LH = _mm_unpackhi_epi16(VV16L, Zero);
+			__m128i VV32HL = _mm_unpacklo_epi16(VV16H, Zero);
+			__m128i VV32HH = _mm_unpackhi_epi16(VV16H, Zero);
+			VV32LL = _mm_sub_epi32(VV32LL, C128);
+			VV32LH = _mm_sub_epi32(VV32LH, C128);
+			VV32HL = _mm_sub_epi32(VV32HL, C128);
+			VV32HH = _mm_sub_epi32(VV32HH, C128);
+
+			__m128i LL_B = _mm_add_epi32(YV32LL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(UV32LL, Weight_B_U)), Shift));
+			__m128i LH_B = _mm_add_epi32(YV32LH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(UV32LH, Weight_B_U)), Shift));
+			__m128i HL_B = _mm_add_epi32(YV32HL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(UV32HL, Weight_B_U)), Shift));
+			__m128i HH_B = _mm_add_epi32(YV32HH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(UV32HH, Weight_B_U)), Shift));
+			Blue =  _mm_packus_epi16(_mm_packus_epi32(LL_B, LH_B), _mm_packus_epi32(HL_B, HH_B));
+
+			__m128i LL_G = _mm_add_epi32(YV32LL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_add_epi32(_mm_mullo_epi32(Weight_G_U, UV32LL), _mm_mullo_epi32(Weight_G_V, VV32LL))), Shift));
+			__m128i LH_G = _mm_add_epi32(YV32LH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_add_epi32(_mm_mullo_epi32(Weight_G_U, UV32LH), _mm_mullo_epi32(Weight_G_V, VV32LH))), Shift));
+			__m128i HL_G = _mm_add_epi32(YV32HL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_add_epi32(_mm_mullo_epi32(Weight_G_U, UV32HL), _mm_mullo_epi32(Weight_G_V, VV32HL))), Shift));
+			__m128i HH_G = _mm_add_epi32(YV32HH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_add_epi32(_mm_mullo_epi32(Weight_G_U, UV32HH), _mm_mullo_epi32(Weight_G_V, VV32HH))), Shift));
+			Green = _mm_packus_epi16(_mm_packus_epi32(LL_G, LH_G), _mm_packus_epi32(HL_G, HH_G));
+
+			__m128i LL_R = _mm_add_epi32(YV32LL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(VV32LL, Weight_R_V)), Shift));
+			__m128i LH_R = _mm_add_epi32(YV32LH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(VV32LH, Weight_R_V)), Shift));
+			__m128i HL_R = _mm_add_epi32(YV32HL, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(VV32HL, Weight_R_V)), Shift));
+			__m128i HH_R = _mm_add_epi32(YV32HH, _mm_srai_epi32(_mm_add_epi32(Half, _mm_mullo_epi32(VV32HH, Weight_R_V)), Shift));
+			Red = _mm_packus_epi16(_mm_packus_epi32(LL_R, LH_R), _mm_packus_epi32(HL_R, HH_R));
+
+			Dest1 = _mm_shuffle_epi8(Blue, _mm_setr_epi8(0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5));
+			Dest1 = _mm_or_si128(Dest1, _mm_shuffle_epi8(Green, _mm_setr_epi8(-1, 0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1)));
+			Dest1 = _mm_or_si128(Dest1, _mm_shuffle_epi8(Red, _mm_setr_epi8(-1, -1, 0, -1, -1, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1)));
+
+			Dest2 = _mm_shuffle_epi8(Blue, _mm_setr_epi8(-1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1, 10, -1));
+			Dest2 = _mm_or_si128(Dest2, _mm_shuffle_epi8(Green, _mm_setr_epi8(5, -1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1, 10)));
+			Dest2 = _mm_or_si128(Dest2, _mm_shuffle_epi8(Red, _mm_setr_epi8(-1, 5, -1, -1, 6, -1, -1, 7, -1, -1, 8, -1, -1, 9, -1, -1)));
+
+			Dest3 = _mm_shuffle_epi8(Blue, _mm_setr_epi8(-1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15, -1, -1));
+			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(Green, _mm_setr_epi8(-1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15, -1)));
+			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(Red, _mm_setr_epi8(10, -1, -1, 11, -1, -1, 12, -1, -1, 13, -1, -1, 14, -1, -1, 15)));
+
+			_mm_storeu_si128((__m128i*)(LinePD + (XX / BlockSize) * BlockSize * 3), Dest1);
+			_mm_storeu_si128((__m128i*)(LinePD + (XX / BlockSize) * BlockSize * 3 + BlockSize), Dest2);
+			_mm_storeu_si128((__m128i*)(LinePD + (XX / BlockSize) * BlockSize * 3 + BlockSize * 2), Dest3);
+		}
+		for (int XX = Block * BlockSize; XX < Width; XX++, LinePU++, LinePV++, LinePY++) {
+			int YV = LinePY[XX], UV = LinePU[XX] - 128, VV = LinePV[XX] - 128;
+			LinePD[XX + 0] = ClampToByte(YV + ((B_U_WT * UV + HalfV) >> Shift));
+			LinePD[XX + 1] = ClampToByte(YV + ((G_U_WT * UV + G_V_WT * VV + HalfV) >> Shift));
+			LinePD[XX + 2] = ClampToByte(YV + ((R_V_WT * VV + HalfV) >> Shift));
+		}
+	}
+}
+
+void YUVToRGBSSE_2(unsigned char *Y, unsigned char *U, unsigned char *V, unsigned char *RGB, int Width, int Height, int Stride) {
+	
+}
+
+
+
 int main() {
 	Mat src = imread("F:\\car.jpg");
 	int Height = src.rows;
@@ -282,7 +388,7 @@ int main() {
 	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
 	printf("%.5f\n", duration);
 	RGBToYUVSSE_2(Src, Y, U, V, Width, Height, Stride);
-	YUVToRGB(Y, U, V, Dest, Width, Height, Stride);
+	YUVToRGBSSE_1(Y, U, V, Dest, Width, Height, Stride);
 	Mat dst(Height, Width, CV_8UC3, Dest);
 	imshow("origin", src);
 	imshow("result", dst);
