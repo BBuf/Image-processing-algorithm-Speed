@@ -3,23 +3,61 @@
 using namespace std;
 using namespace cv;
 
-void ConvertBGR8U2BGRAF_SSE(unsigned char *Src, float *Dest, int Width, int Height, int Stride) {
+void debug(__m128i var) {
+	uint8_t *val = (uint8_t*)&var;//can also use uint32_t instead of 16_t 
+	printf("Numerical: %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i\n",
+		val[0], val[1], val[2], val[3], val[4], val[5],
+		val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13],
+		val[14], val[15]);
+}
+
+void ConvertBGR8U2BGRAF(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride)
+{
+	//#pragma omp parallel for
+	for (int Y = 0; Y < Height; Y++)
+	{
+		unsigned char *LinePS = Src + Y * Stride;
+		unsigned char *LinePD = Dest + Y * Width * 4;
+		for (int X = 0; X < Width; X++, LinePS += 3, LinePD += 4)
+		{
+			LinePD[0] = LinePS[0];    LinePD[1] = LinePS[1];    LinePD[2] = LinePS[2]; LinePD[3] = 0;
+		}
+	}
+}
+
+void ConvertBGRAF2BGR8U(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride)
+{
+	//#pragma omp parallel for
+	for (int Y = 0; Y < Height; Y++)
+	{
+		unsigned char *LinePS = Src + Y * Width * 4;
+		unsigned char *LinePD = Dest + Y * Stride;
+		for (int X = 0; X < Width; X++, LinePS += 4, LinePD += 3)
+		{
+			LinePD[0] = LinePS[0];    LinePD[1] = LinePS[1];    LinePD[2] = LinePS[2];
+		}
+	}
+}
+
+void ConvertBGR8U2BGRAF_SSE(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
 	const int BlockSize = 4;
 	int Block = (Width - 2) / BlockSize;
 	__m128i Mask = _mm_setr_epi8(0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1);
+	__m128i Mask2 = _mm_setr_epi8(0, 2, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
 	__m128i Zero = _mm_setzero_si128();
 	for (int Y = 0; Y < Height; Y++) {
 		unsigned char *LinePS = Src + Y * Stride;
-		float *LinePD = Dest + Y * Width * 4;
+		unsigned char *LinePD = Dest + Y * Width * 4;
 		int X = 0;
 		for (; X < Block * BlockSize; X += BlockSize, LinePS += BlockSize * 3, LinePD += BlockSize * 4) {
 			__m128i SrcV = _mm_shuffle_epi8(_mm_loadu_si128((const __m128i*)LinePS), Mask);
 			__m128i Src16L = _mm_unpacklo_epi8(SrcV, Zero);
 			__m128i Src16H = _mm_unpackhi_epi8(SrcV, Zero);
-			_mm_storeu_ps(LinePD + 0, _mm_cvtepi32_ps(_mm_unpacklo_epi16(Src16L, Zero)));
-			_mm_storeu_ps(LinePD + 4, _mm_cvtepi32_ps(_mm_unpackhi_epi16(Src16L, Zero)));
-			_mm_storeu_ps(LinePD + 8, _mm_cvtepi32_ps(_mm_unpacklo_epi16(Src16H, Zero)));
-			_mm_storeu_ps(LinePD + 12, _mm_cvtepi32_ps(_mm_unpackhi_epi16(Src16H, Zero)));
+
+			_mm_storeu_si128((__m128i *)(LinePD + 0), _mm_shuffle_epi8(_mm_unpacklo_epi32(Src16L, Zero), Mask2));
+			_mm_storeu_si128((__m128i *)(LinePD + 4), _mm_shuffle_epi8(_mm_unpackhi_epi32(Src16L, Zero), Mask2));
+			_mm_storeu_si128((__m128i *)(LinePD + 8), _mm_shuffle_epi8(_mm_unpacklo_epi32(Src16H, Zero), Mask2));
+			_mm_storeu_si128((__m128i *)(LinePD + 12), _mm_shuffle_epi8(_mm_unpackhi_epi32(Src16H, Zero), Mask2));
 		}
 		for (; X < Width; X++, LinePS += 3, LinePD += 4) {
 			LinePD[0] = LinePS[0];    LinePD[1] = LinePS[1];    LinePD[2] = LinePS[2];    LinePD[3] = 0;
@@ -27,48 +65,39 @@ void ConvertBGR8U2BGRAF_SSE(unsigned char *Src, float *Dest, int Width, int Heig
 	}
 }
 
-void ConvertBGRAF2BGR8U_SSE(float *Src, unsigned char *Dest, int Width, int Height, int Stride) {
+void ConvertBGRAF2BGR8U_SSE(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
 	const int BlockSize = 4;
 	int Block = (Width - 2) / BlockSize;
 	//__m128i Mask = _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15);
-	__m128i Mask1 = _mm_setr_epi8(0, -1, 1, -1, 4, -1, 5, -1, 8, -1, 9, -1, 12, -1, 13, -1);
-	__m128i Mask2 = _mm_setr_epi8(2, -1, 3, -1, 6, -1, 7, -1, 10, -1, 11, -1, 14, -1, 15, -1);
+	__m128i MaskB = _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+	__m128i MaskG = _mm_setr_epi8(1, 5, 9, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+	__m128i MaskR = _mm_setr_epi8(2, 6, 10, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
 	__m128i Zero = _mm_setzero_si128();
 	for (int Y = 0; Y < Height; Y++) {
-		float *LinePS = Src + Y * Width * 4;
+		unsigned char *LinePS = Src + Y * Width * 4;
 		unsigned char *LinePD = Dest + Y * Stride;
 		int X = 0;
 		for (; X < Block * BlockSize; X += BlockSize, LinePS += BlockSize * 4, LinePD += BlockSize * 3) {
-			//__m128i SrcV = _mm_shuffle_epi8(_mm_loadu_si128((const __m128i*)LinePS), Mask);
-			// B1 0 G1 0 B2 0 G2 0 B3 0 G3 0 B4 0 G4 0
-			__m128i BG = _mm_shuffle_epi8(_mm_loadu_si128((const __m128i*)LinePS), Mask1);
-			// R1 0 A1 0 R2 0 A2 0 R3 0 A3 0 R4 0 A4 0
-			__m128i RA = _mm_shuffle_epi8(_mm_loadu_si128((const __m128i*)LinePS), Mask2);
-			__m128i BG16L = _mm_unpacklo_epi8(BG, Zero); // B1 0 G1 0 B2 0 G2 0 B3 0 G3 0 B4 0 G4 0
-			__m128i RA16L = _mm_unpacklo_epi8(RA, Zero); // R1 0 A1 0 R2 0 A2 0 R3 0 A3 0 R4 0 A4 0
+			__m128i SrcV = _mm_loadu_si128((const __m128i*)LinePS);
+			__m128i B = _mm_shuffle_epi8(SrcV, MaskB);
+			__m128i G = _mm_shuffle_epi8(SrcV, MaskG);
+			__m128i R = _mm_shuffle_epi8(SrcV, MaskR);
+			__m128i Ans1 = Zero, Ans2 = Zero, Ans3 = Zero;
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(B, _mm_setr_epi8(0, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(G, _mm_setr_epi8(-1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(R, _mm_setr_epi8(-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
 
-			__m128i B = _mm_unpacklo_epi16(BG16L, Zero); // B1 0 B2 0 B3 0 B4 0
-			__m128i G = _mm_unpackhi_epi16(BG16L, Zero); // G1 0 G2 0 G3 0 G4 0
-			__m128i R = _mm_unpacklo_epi16(RA16L, Zero); // R1 0 R2 0 R3 0 R4 0
-			
-			__m128i Dest1 = _mm_shuffle_epi8(B, _mm_setr_epi16(0, -1, -1, -1, -1, -1, 1, -1));
-			Dest1 = _mm_or_si128(Dest1, _mm_shuffle_epi8(G, _mm_setr_epi16(-1, -1, 0, -1, -1, -1, -1, -1)));
-			Dest1 = _mm_or_si128(Dest1, _mm_shuffle_epi8(R, _mm_setr_epi16(-1, -1, -1, -1, 0, -1, -1, -1)));
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(B, _mm_setr_epi8(-1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(G, _mm_setr_epi8(1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(R, _mm_setr_epi8(-1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
 
-			__m128i Dest2 = _mm_shuffle_epi8(B, _mm_setr_epi16(-1, -1, -1, -1, 2, -1, -1, -1));
-			Dest2 = _mm_or_si128(Dest2, _mm_shuffle_epi8(G, _mm_setr_epi16(1, -1, -1, -1, -1, -1, 2, -1)));
-			Dest2 = _mm_or_si128(Dest2, _mm_shuffle_epi8(R, _mm_setr_epi16(-1, -1, 1, -1, -1, -1, -1, -1)));
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(B, _mm_setr_epi8(-1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(G, _mm_setr_epi8(-1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(R, _mm_setr_epi8(2, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
 
-			__m128i Dest3 = _mm_shuffle_epi8(B, _mm_setr_epi16(-1, -1, 3, -1, -1, -1, -1, -1));
-			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(G, _mm_setr_epi16(-1, -1, -1, -1, 3, -1, -1, -1)));
-			Dest3 = _mm_or_si128(Dest3, _mm_shuffle_epi8(R, _mm_setr_epi16(2, -1, -1, -1, -1, -1, 3, -1)));
-
-			Dest1 = _mm_packus_epi32(Dest1, Zero);
-			Dest2 = _mm_packus_epi32(Dest2, Zero);
-			Dest3 = _mm_packus_epi32(Dest3, Zero);
-			_mm_storeu_si128((__m128i*)(LinePD + 0), Dest1);
-			_mm_storeu_si128((__m128i*)(LinePD + 4), Dest2);
-			_mm_storeu_si128((__m128i*)(LinePD + 8), Dest3);
+			_mm_storeu_si128((__m128i*)(LinePD + 0), Ans1);
+			_mm_storeu_si128((__m128i*)(LinePD + 4), Ans2);
+			_mm_storeu_si128((__m128i*)(LinePD + 8), Ans3);
 		}
 		for (; X < Width; X++, LinePS += 4, LinePD += 3) {
 			LinePD[0] = LinePS[0]; LinePD[1] = LinePS[1]; LinePD[2] = LinePS[2];
@@ -116,10 +145,12 @@ float SinXDivX_Standard(float X) {
 		return sin(X * 3.1415926f) / (X * 3.1415926f);
 }
 
-void Bicubic_Original(unsigned char *Src, int Width, int Height, int Stride, unsigned char *Pixel, float X, float Y) {
+void Bicubic_Original(unsigned char *Src, int Width, int Height, int Stride, unsigned char *Pixel, float X, float Y)
+{
 	int Channel = Stride / Width;
 	int PosX = floor(X), PosY = floor(Y);
 	float PartXX = X - PosX, PartYY = Y - PosY;
+
 	unsigned char *Pixel00 = GetCheckedPixel(Src, Width, Height, Stride, Channel, PosX - 1, PosY - 1);
 	unsigned char *Pixel01 = GetCheckedPixel(Src, Width, Height, Stride, Channel, PosX + 0, PosY - 1);
 	unsigned char *Pixel02 = GetCheckedPixel(Src, Width, Height, Stride, Channel, PosX + 1, PosY - 1);
@@ -142,11 +173,17 @@ void Bicubic_Original(unsigned char *Src, int Width, int Height, int Stride, uns
 	float V0 = SinXDivX(1 + PartYY), V1 = SinXDivX(PartYY);
 	float V2 = SinXDivX(1 - PartYY), V3 = SinXDivX(2 - PartYY);
 
-	for (int I = 0; I < Channel; I++) {
+	for (int I = 0; I < Channel; I++)
+	{
 		float Sum1 = (Pixel00[I] * U0 + Pixel01[I] * U1 + Pixel02[I] * U2 + Pixel03[I] * U3) * V0;
+		//printf("%.5f\n", Sum1);
 		float Sum2 = (Pixel10[I] * U0 + Pixel11[I] * U1 + Pixel12[I] * U2 + Pixel13[I] * U3) * V1;
+		//printf("%.5f\n", Sum2);
 		float Sum3 = (Pixel20[I] * U0 + Pixel21[I] * U1 + Pixel22[I] * U2 + Pixel23[I] * U3) * V2;
+		//printf("%.5f\n", Sum3);
 		float Sum4 = (Pixel30[I] * U0 + Pixel31[I] * U1 + Pixel22[I] * U2 + Pixel33[I] * U3) * V3;
+		//printf("%.5f\n", Sum4);
+		// printf("%d %.5f %.5f %.5f %.5f\n", I, Sum1, Sum2, Sum3, Sum4);
 		Pixel[I] = ClampToByte(Sum1 + Sum2 + Sum3 + Sum4 + 0.5f);
 	}
 }
@@ -232,10 +269,13 @@ void IM_Resize_Cubic_Origin(unsigned char *Src, unsigned char *Dest, int SrcW, i
 		memcpy(Dest, Src, SrcW * SrcH * Channel * sizeof(unsigned char));
 		return;
 	}
-	for (int Y = 0; Y < DstH; Y++) {
+	printf("%d\n", Channel);
+	for (int Y = 0; Y < DstH; Y++)
+	{
 		unsigned char *LinePD = Dest + Y * StrideD;
-		float SrcY = (Y + 0.49999999f) * SrcH / DstH - 0.5f;
-		for (int X = 0; X < DstW; X++) {
+		float SrcY = (Y + 0.4999999f) * SrcH / DstH - 0.5f;
+		for (int X = 0; X < DstW; X++)
+		{
 			float SrcX = (X + 0.4999999f) * SrcW / DstW - 0.5f;
 			Bicubic_Original(Src, SrcW, SrcH, StrideS, LinePD, SrcX, SrcY);
 			LinePD += Channel;
@@ -333,7 +373,7 @@ void IM_Resize_SSE(unsigned char *Src, unsigned char *Dest, int SrcW, int SrcH, 
 	if (StartX >= DstW)			StartX = DstW;
 	if (EndX < StartX)			EndX = StartX;
 	if (EndY < StartY)			EndY = StartY;
-	for(int X = StartX, SrcX = ErrorX + StartX * AddX; X < EndY; X++, SrcX += AddX){
+	for (int X = StartX, SrcX = ErrorX + StartX * AddX; X < EndY; X++, SrcX += AddX) {
 		int U = (unsigned char)(SrcX >> 8);
 		Table[X * 4 + 0] = SinXDivX_Table[256 + U]; //建立一个新表便于SSE操作
 		Table[X * 4 + 1] = SinXDivX_Table[U];
@@ -341,16 +381,16 @@ void IM_Resize_SSE(unsigned char *Src, unsigned char *Dest, int SrcW, int SrcH, 
 		Table[X * 4 + 3] = SinXDivX_Table[512 - U];
 	}
 	int SrcY = ErrorY;
-	for (int Y = 0; Y < StartY; Y++, SrcY += AddY){ // 同IM_Resize_Cubic_Table函数
+	for (int Y = 0; Y < StartY; Y++, SrcY += AddY) { // 同IM_Resize_Cubic_Table函数
 		unsigned char *LinePD = Dest + Y * StrideD;
-		for (int X = 0, SrcX = ErrorX; X < DstW; X++, SrcX += AddX, LinePD += Channel){
+		for (int X = 0, SrcX = ErrorX; X < DstW; X++, SrcX += AddX, LinePD += Channel) {
 			Bicubic_Border(Src, SrcW, SrcH, StrideS, LinePD, SinXDivX_Table, SrcX, SrcY);
 		}
 	}
 	for (int Y = StartY; Y < EndY; Y++, SrcY += AddY) {
 		int SrcX = ErrorX;
 		unsigned char *LinePD = Dest + Y * StrideD;
-		for (int X = 0; X < StartX; X++, SrcX += AddX, LinePD += Channel){
+		for (int X = 0; X < StartX; X++, SrcX += AddX, LinePD += Channel) {
 			Bicubic_Border(Src, SrcW, SrcH, StrideS, LinePD, SinXDivX_Table, SrcX, SrcY);
 		}
 		int V = (unsigned char)(SrcY >> 8);
@@ -359,7 +399,7 @@ void IM_Resize_SSE(unsigned char *Src, unsigned char *Dest, int SrcW, int SrcH, 
 		for (int X = StartX; X < EndX; X++, SrcX += AddX, LinePD += Channel) {
 			__m128i PartX = _mm_loadl_epi64((__m128i *)(Table + X * 4));
 			//PartX: U0 U1 U2 U3 U0 U1 U2 U3 
-			PartX = _mm_unpacklo_epi64(PartX, PartX); 
+			PartX = _mm_unpacklo_epi64(PartX, PartX);
 			unsigned char *Pixel0 = LineY + ((SrcX >> 16) - 1) * Channel;
 			unsigned char *Pixel1 = Pixel0 + StrideS;
 			unsigned char *Pixel2 = Pixel1 + StrideS;
@@ -435,11 +475,25 @@ int main() {
 	int Width = src.cols;
 	int Stride = Width * 3;
 	unsigned char *Src = src.data;
-	unsigned char *Dest = new unsigned char[Height * Width * 3];
-	float *Buffer = (float *)malloc(Width * Height * sizeof(float) * 4);
-	ConvertBGR8U2BGRAF_SSE(Src, Buffer, Width, Height, Stride);
-	ConvertBGRAF2BGR8U_SSE(Buffer, Dest, Width, Height, Stride);
-	Mat dst(Height, Width, CV_8UC3, Dest);
+	unsigned char *Buffer = new unsigned char[Height * Width * 4];
+	ConvertBGR8U2BGRAF(Src, Buffer, Width, Height, Stride);
+	int SrcW = Width;
+	int SrcH = Height;
+	int StrideS = Width * 4;
+	int DstW = Width * 15 / 10;
+	int DstH = Height * 15 / 10;
+	unsigned char *Res = new unsigned char[DstH * DstW * 4];
+	unsigned char *Dest = new unsigned char[DstH * DstW * 3];
+	int StrideD = DstW * 4;
+	int64 st = cvGetTickCount();
+	for (int i = 0; i < 10; i++) {
+		IM_Resize_SSE(Buffer, Res, SrcW, SrcH, StrideS, DstW, DstH, StrideD);
+	}
+	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
+	printf("%.5f\n", duration);
+	IM_Resize_Cubic_Origin(Buffer, Res, SrcW, SrcH, StrideS, DstW, DstH, StrideD);
+	ConvertBGRAF2BGR8U(Res, Dest, DstW, DstH, DstW * 3);
+	Mat dst(DstH, DstW, CV_8UC3, Dest);
 	imshow("origin", src);
 	imshow("result", dst);
 	imwrite("F:\\res.jpg", dst);
