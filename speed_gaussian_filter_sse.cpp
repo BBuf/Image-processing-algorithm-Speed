@@ -237,12 +237,43 @@ void ConvertBGRAF2BGR8U(float *Src, unsigned char *Dest, int Width, int Height, 
 	}
 }
 
-void ConvertBGRAF2BGR8U_SSE(float *Src, unsigned char *Dest, int Width, int Height, int Stride) {
+
+void ConvertBGRAF2BGR8U_SSE(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
+	const int BlockSize = 4;
+	int Block = (Width - 2) / BlockSize;
+	//__m128i Mask = _mm_setr_epi8(0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 3, 7, 11, 15);
+	__m128i MaskB = _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+	__m128i MaskG = _mm_setr_epi8(1, 5, 9, 13, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+	__m128i MaskR = _mm_setr_epi8(2, 6, 10, 14, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+	__m128i Zero = _mm_setzero_si128();
 	for (int Y = 0; Y < Height; Y++) {
-		float *LinePS = Src + Y * Width * 4;
+		unsigned char *LinePS = Src + Y * Width * 4;
 		unsigned char *LinePD = Dest + Y * Stride;
-		for (int X = 0; X < Width; X++, LinePS += 4, LinePD += 3) {
-			LinePD[0] = LinePS[0]; LinePD[1] = LinePS[1];    LinePD[2] = LinePS[2];
+		int X = 0;
+		for (; X < Block * BlockSize; X += BlockSize, LinePS += BlockSize * 4, LinePD += BlockSize * 3) {
+			__m128i SrcV = _mm_loadu_si128((const __m128i*)LinePS);
+			__m128i B = _mm_shuffle_epi8(SrcV, MaskB);
+			__m128i G = _mm_shuffle_epi8(SrcV, MaskG);
+			__m128i R = _mm_shuffle_epi8(SrcV, MaskR);
+			__m128i Ans1 = Zero, Ans2 = Zero, Ans3 = Zero;
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(B, _mm_setr_epi8(0, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1))); 
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(G, _mm_setr_epi8(-1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans1 = _mm_or_si128(Ans1, _mm_shuffle_epi8(R, _mm_setr_epi8(-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(B, _mm_setr_epi8(-1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(G, _mm_setr_epi8(1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans2 = _mm_or_si128(Ans2, _mm_shuffle_epi8(R, _mm_setr_epi8(-1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(B, _mm_setr_epi8(-1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(G, _mm_setr_epi8(-1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+			Ans3 = _mm_or_si128(Ans3, _mm_shuffle_epi8(R, _mm_setr_epi8(2, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1)));
+
+			_mm_storeu_si128((__m128i*)(LinePD + 0), Ans1);
+			_mm_storeu_si128((__m128i*)(LinePD + 4), Ans2);
+			_mm_storeu_si128((__m128i*)(LinePD + 8), Ans3);
+		}
+		for (; X < Width; X++, LinePS += 4, LinePD += 3) {
+			LinePD[0] = LinePS[0]; LinePD[1] = LinePS[1]; LinePD[2] = LinePS[2];
 		}
 	}
 }
