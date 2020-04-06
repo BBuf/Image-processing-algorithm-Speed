@@ -7,24 +7,30 @@
 ## resources
 - SSE优化相关的资源。
 
-#### PC的CPU为I7-8770，64位。
+#### PC的CPU为I5-3230，64位。
 
 #### OpenCV版本为3.4.0
 
-#### 速度测试时，跑了10个loop。
 
-#### 测试速度时VS的配置图如下：
-
-![](image/peizhi.jpg)
 
 - sse_implementation_of_common_functions_in_image_processing.cpp 多个图像处理中常用函数的SSE实现。
-- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有2-3倍加速。算法原理：https://blog.csdn.net/just_sort/article/details/94456945 。速度测试结果如下：
+- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有3倍加速。算法原理：https://blog.csdn.net/just_sort/article/details/105338621 。速度测试结果如下：
 
-|优化方式|图像分辨率|速度|
-|---------|----------|----|
-|C语言实现+单线程|4032*3024|9.39ms|
-|4次循环展开+单线程|4032*3024|8.74ms|
-|SSE优化+单线程|4032*3024|4.57ms|
+
+
+| 分辨率    | 优化            | 循环次数 | 速度    |
+| --------- | --------------- | -------- | ------- |
+| 4032x3024 | 原始实现        | 100      | 34.87ms |
+| 4032x3024 | 第一版优化      | 100      | 23.10ms |
+| 4032x3024 | OpenCV 自带函数 | 100      | 18.23ms |
+| 4032x3024 | 第二版优化      | 100      | 17.76ms |
+| 4032x3024 | 第三版(SSE)优化 | 100      | 10.54ms |
+
+
+
+-------------------------------------------------------------------------需要重测--------------------------------------------------------------------
+
+
 
 - speed_gaussian_filter_sse.cpp 使用sse加速高斯滤波算法。算法原理：https://blog.csdn.net/just_sort/article/details/95212099 。速度测试效果如下：
 
