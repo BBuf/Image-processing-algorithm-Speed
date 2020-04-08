@@ -90,7 +90,7 @@ void RGB2Y_3(unsigned char *Src, unsigned char *Dest, int Width, int Height, int
 			__m128i accumL = _mm_or_si128(shftaL, shftbL);//25
 			__m128i accumH = _mm_or_si128(shftaH, shftbH);//26
 			__m128i h3 = _mm_or_si128(accumL, accumH);//27
-			//__m128i h3 = _mm_blendv_epi8(accumL, accumH, _mm_setr_epi8(0, 0, 0, -1, -1, -1, 0, 0, 0, -1, -1, -1, 1, 1, 1, 1));
+													  //__m128i h3 = _mm_blendv_epi8(accumL, accumH, _mm_setr_epi8(0, 0, 0, -1, -1, -1, 0, 0, 0, -1, -1, -1, 1, 1, 1, 1));
 			_mm_storeu_si128((__m128i *)(LinePD + X), h3);
 		}
 		for (; X < Width; X++, LinePS += 3) {
@@ -153,6 +153,9 @@ void RGB2Y_4(unsigned char *Src, unsigned char *Dest, int Width, int Height, int
 			h3 = _mm_or_si128(h3, shftcH);
 			_mm_storeu_si128((__m128i *)(LinePD + X), h3);
 		}
+		for (; X < Width; X++, LinePS += 3) {
+			LinePD[X] = (B_WT * LinePS[0] + G_WT * LinePS[1] + R_WT * LinePS[2]) >> 8;
+		}
 	}
 }
 
@@ -214,6 +217,9 @@ void  _RGB2Y(unsigned char* Src, const int32_t Width, const int32_t start_row, c
 			__m128i h3 = _mm_adds_epu8(_mm256_castsi256_si128(accum), _mm256_extracti128_si256(accum, 1));
 
 			_mm_storeu_si128((__m128i *)(LinePD + X), h3);
+		}
+		for (; X < Width; X++, LinePS += 3) {
+			LinePD[X] = (B_WT * LinePS[0] + G_WT * LinePS[1] + R_WT * LinePS[2]) >> 14;
 		}
 	}
 }
