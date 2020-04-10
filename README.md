@@ -14,7 +14,7 @@
 
 
 - sse_implementation_of_common_functions_in_image_processing.cpp 多个图像处理中常用函数的SSE实现。
-- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有接近2倍加速。算法原理：https://blog.csdn.net/just_sort/article/details/105338621 。速度测试结果如下：
+- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有接近3--4倍加速。算法原理：https://mp.weixin.qq.com/s/itvuHfLwtgyE43LyoQc8UA。速度测试结果如下：
 
 
 
@@ -32,7 +32,7 @@
 
 
 
-- speed_vibrance_algorithm.cpp 使用SSE加速自然饱和度算法，加速幅度巨大，算法原理请看：https://blog.csdn.net/just_sort/article/details/95998524 。速度测试结果如下：
+- speed_vibrance_algorithm.cpp 使用SSE加速自然饱和度算法，加速9倍，算法原理请看： https://mp.weixin.qq.com/s/26UVvqMNLgnquXY21Xu3OQ。速度测试结果如下：
 
 |分辨率|优化|循环次数|速度|
 |----|----|----|----|
@@ -40,7 +40,6 @@
 |4032x3024|第一版优化|100|62.43ms|
 |4032x3024|第二版优化(4线程)|100|28.89ms|
 |4032x3024|第三版优化(SSE)|100|12.69ms|
-
 
 ----------------------------------------------------------------------------------
 
