@@ -394,9 +394,6 @@ void Sobel_AVX1(unsigned char *Src, unsigned char *Dest, int Width, int Height, 
 	_Sobel(Src, Width, Height, 0, Height, Stride, Dest);
 	
 	free(RowCopy);
-	free(First);
-	free(Second);
-	free(Third);
 }
 
 void Sobel_AVX2(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
@@ -432,9 +429,6 @@ void Sobel_AVX2(unsigned char *Src, unsigned char *Dest, int Width, int Height, 
 		fut[j].wait();
 
 	free(RowCopy);
-	free(First);
-	free(Second);
-	free(Third);
 }
 
 
@@ -448,12 +442,12 @@ int main() {
 	int Radius = 11;
 	int Adjustment = 50;
 	int64 st = cvGetTickCount();
-	for (int i = 0; i <1000; i++) {
+	/*for (int i = 0; i <1000; i++) {
 		Sobel_SSE3(Src, Dest, Width, Height, Stride);
-	}
+	}*/
 	double duration = (cv::getTickCount() - st) / cv::getTickFrequency();
 	printf("%.5f\n", duration);
-	Sobel_AVX1(Src, Dest, Width, Height, Stride);
+	Sobel_SSE1(Src, Dest, Width, Height, Stride);
 	Mat dst(Height, Width, CV_8UC3, Dest);
 	imshow("origin", src);
 	imshow("result", dst);
