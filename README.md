@@ -14,7 +14,7 @@
 
 
 - sse_implementation_of_common_functions_in_image_processing.cpp 多个图像处理中常用函数的SSE实现。
-- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于OpenCV系统函数有接近3--4倍加速。算法原理：https://mp.weixin.qq.com/s/itvuHfLwtgyE43LyoQc8UA 速度测试结果如下：
+- speed_rgb2gray_sse.cpp 使用sse加速RGB和灰度图转换算法，相比于原始实现有接近5倍加速。算法原理：https://mp.weixin.qq.com/s/SagVQ5gfXWWA7NATv-zvBQ  速度测试结果如下：
 
 >测试CPU型号：Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz
 
@@ -41,6 +41,21 @@
 |4032x3024|第二版优化(4线程)|100|28.89ms|
 |4032x3024|第三版优化(SSE)|100|12.69ms|
 
+
+
+- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96282437 。速度测试结果如下：
+
+|分辨率|算法优化|循环次数|速度|
+|-|-|-|-|
+|4032x3024|普通实现|1000|126.54 ms|
+|4032x3024|Float->INT+查表法|1000|81.62 ms|
+|4032x3024|SSE优化版本1|1000|34.95 ms|
+|4032x3024|SSE优化版本2|1000|28.87 ms|
+|4032x3024|AVX2优化版本1|1000|15.42 ms  |
+|4032x3024|AVX2优化+std::async|1000| 5.69 ms |
+
+
+
 ----------------------------------------------------------------------------------
 
 - speed_gaussian_filter_sse.cpp 使用sse加速高斯滤波算法。算法原理：https://blog.csdn.net/just_sort/article/details/95212099 。速度测试效果如下：
@@ -59,15 +74,6 @@
 |SSE优化+单线程|4032*3024|66.10ms|
 |SSE优化+4线程|4032*3024|66.20ms|
 
-
-
-- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96282437 。速度测试结果如下：
-
-|优化方式|图像分辨率 |速度|
-|---------|----------|-------|
-|C语言实现+单线程|4032*3024|192.01ms|
-|浮点数改成整形运算+单线程|4032*3024|91.20ms|
-|SSE优化+单线程|4032*3024|21.14ms|
 
 - speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96480275 。速度测试结果如下：
 
