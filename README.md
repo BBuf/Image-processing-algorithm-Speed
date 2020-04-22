@@ -54,7 +54,7 @@
 |4032x3024|AVX2优化版本1|1000|15.42 ms  |
 |4032x3024|AVX2优化+std::async|1000| 5.69 ms |
 
-- - speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://blog.csdn.net/just_sort/article/details/105666110。速度测试结果如下：
+- speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://blog.csdn.net/just_sort/article/details/105666110。速度测试结果如下：
 
 |分辨率|算法优化|循环次数|速度|
 |-|-|-|-|
