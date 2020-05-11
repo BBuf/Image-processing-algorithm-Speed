@@ -83,13 +83,6 @@
 |SSE优化+4线程|4032*3024|66.20ms|
 
 
-- speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96480275 。速度测试结果如下：
-
-|优化方式|图像分辨率 |速度|
-|---------|----------|-------|
-|C语言实现+单线程|4272*2848|20.19ms|
-|SSE优化+单线程|4272*2848|4.22ms|
-
 - speed_common_functions.cpp 对图像处理的一些常用函数的快速实现，个别使用了SSE优化。
 - speed_max_filter_sse.cpp 使用speed_histogram_algorithm_framework框架实现最大值滤波，半径越大越明显。原理请看：https://blog.csdn.net/just_sort/article/details/97280807 。运行的时候记得把工程属性中的sdl检查关掉，不然会报一个变量未初始化的错误。速度测试效果如下:
 
