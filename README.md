@@ -43,7 +43,7 @@
 
 
 
-- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://blog.csdn.net/just_sort/article/details/96282437 。速度测试结果如下：
+- speed_sobel_edgedetection_sse.cpp 使用SSE加速Sobel边缘检测算法，加速幅度巨大，算法原理请看：https://mp.weixin.qq.com/s/5lCfO_jmSfP7DbsgM7qbpg。速度测试结果如下：
 
 |分辨率|算法优化|循环次数|速度|
 |-|-|-|-|
@@ -54,7 +54,7 @@
 |4032x3024|AVX2优化版本1|1000|15.42 ms  |
 |4032x3024|AVX2优化+std::async|1000| 5.69 ms |
 
-- speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://blog.csdn.net/just_sort/article/details/105666110。速度测试结果如下：
+- speed_skin_detection_sse.cpp 使用SSE加速肤色检测算法，加速幅度较大，算法原理请看：https://mp.weixin.qq.com/s/UFzY1s6ohTM-dnNg0P4kkw。速度测试结果如下：
 
 |分辨率|算法优化|循环次数|速度|
 |-|-|-|-|
@@ -63,7 +63,7 @@
 |4272x2848|SSE第一版|1000|6.77ms|
 |4272x2848|SSE第二版(std::async)|1000|4.73ms|
 
-- speed_rgb2yuv_sse.cpp SSE极致优化RGB和YUV图像空间互转，算法原理请看：https://blog.csdn.net/just_sort/article/details/106065334，速度测试结果如下：
+- speed_rgb2yuv_sse.cpp SSE极致优化RGB和YUV图像空间互转，算法原理请看：https://mp.weixin.qq.com/s/ryGocz-0YpqZ1CjYXJbd7Q，速度测试结果如下：
 
 |分辨率|算法优化|循环次数|速度|
 |-|-|-|-|
@@ -73,6 +73,18 @@
 |4032x3024|普通SSE向量化|1000|48.92ms|
 |4032x3024|_mm_madd_epi16二次优化|1000|33.04ms|
 |4032x3024|SSE+4线程|1000|23.70ms|
+
+
+
+- speed_median_filter_3x3_sse.cpp SSE急速优化3*3中值滤波，取得了比OpenCV3.1.0快9-10倍的加速效果，算法原理请看：https://blog.csdn.net/just_sort/article/details/98617050 。速度测试效果如下：
+
+| 优化方式              | 图像分辨率 | 半径 | 速度      |
+| --------------------- | ---------- | ---- | --------- |
+| C语言实现             | 4272*2848  | 3    | 5103.22ms |
+| C语言实现+优化排序    | 4272*2848  | 3    | 749.43ms  |
+| SSE优化               | 4272*2848  | 3    | 10.26ms   |
+| OpenCV3.1.0自带的函数 | 4272*2848  | 3    | 100.09ms  |
+
 
 
 ----------------------------------------------------------------------------------
@@ -123,16 +135,6 @@
 |---------|----------|-------|-------|
 |C语言实现+单线程|4272*2848|7|206.00ms|
 |SSE优化+单线程|4272*2848|7|57.12ms|
-
-- speed_median_filter_3x3_sse.cpp SSE急速优化3*3中值滤波，取得了比OpenCV3.1.0快9-10倍的加速效果，算法原理请看：https://blog.csdn.net/just_sort/article/details/98617050 。速度测试效果如下：
-
-|优化方式|图像分辨率 |半径|速度|
-|---------|----------|-------|-------|
-|C语言实现|4272*2848|3|5103.22ms|
-|C语言实现+优化排序|4272*2848|3|749.43ms|
-|SSE优化|4272*2848|3|10.26ms|
-|OpenCV3.1.0自带的函数|4272*2848|3|100.09ms|
-
 
 - speed_bicubic_zoom_sse.cpp SSE优化三次立方插值算法，算法原理请看：https://blog.csdn.net/just_sort/article/details/100119653 。速度测试结果如下：
 
