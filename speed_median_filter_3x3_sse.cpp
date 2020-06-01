@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 using namespace std;
@@ -36,7 +37,7 @@ void MedianBlur3X3_Ori(unsigned char *Src, unsigned char *Dest, int Width, int H
 			unsigned char *LineP1 = LineP0 + Stride;
 			unsigned char *LineP2 = LineP1 + Stride;
 			unsigned char *LinePD = Dest + Y * Stride + 3;
-			for (int X = 1; X < Width - 1; X++){
+			for (int X = 1; X < Width - 1; X++) {
 				ArrayB[0] = LineP0[-3];       ArrayG[0] = LineP0[-2];       ArrayR[0] = LineP0[-1];
 				ArrayB[1] = LineP0[0];        ArrayG[1] = LineP0[1];        ArrayR[1] = LineP0[2];
 				ArrayB[2] = LineP0[3];        ArrayG[2] = LineP0[4];        ArrayR[2] = LineP0[5];
@@ -72,16 +73,16 @@ void Swap(int &X, int &Y) {
 	X ^= Y;
 }
 
-void MedianBlur3X3_Faster(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride){
+void MedianBlur3X3_Faster(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
 	int Channel = Stride / Width;
-	if (Channel == 1){
+	if (Channel == 1) {
 
-		for (int Y = 1; Y < Height - 1; Y++){
+		for (int Y = 1; Y < Height - 1; Y++) {
 			unsigned char *LineP0 = Src + (Y - 1) * Stride + 1;
 			unsigned char *LineP1 = LineP0 + Stride;
 			unsigned char *LineP2 = LineP1 + Stride;
 			unsigned char *LinePD = Dest + Y * Stride + 1;
-			for (int X = 1; X < Width - 1; X++){
+			for (int X = 1; X < Width - 1; X++) {
 				int Gray0, Gray1, Gray2, Gray3, Gray4, Gray5, Gray6, Gray7, Gray8;
 				Gray0 = LineP0[X - 1];        Gray1 = LineP0[X];    Gray2 = LineP0[X + 1];
 				Gray3 = LineP1[X - 1];        Gray4 = LineP1[X];    Gray5 = LineP1[X + 1];
@@ -112,13 +113,13 @@ void MedianBlur3X3_Faster(unsigned char *Src, unsigned char *Dest, int Width, in
 		}
 
 	}
-	else{
-		for (int Y = 1; Y < Height - 1; Y++){
+	else {
+		for (int Y = 1; Y < Height - 1; Y++) {
 			unsigned char *LineP0 = Src + (Y - 1) * Stride + 3;
 			unsigned char *LineP1 = LineP0 + Stride;
 			unsigned char *LineP2 = LineP1 + Stride;
 			unsigned char *LinePD = Dest + Y * Stride + 3;
-			for (int X = 1; X < Width - 1; X++){
+			for (int X = 1; X < Width - 1; X++) {
 				int Blue0, Blue1, Blue2, Blue3, Blue4, Blue5, Blue6, Blue7, Blue8;
 				int Green0, Green1, Green2, Green3, Green4, Green5, Green6, Green7, Green8;
 				int Red0, Red1, Red2, Red3, Red4, Red5, Red6, Red7, Red8;
@@ -207,7 +208,7 @@ void MedianBlur3X3_Faster(unsigned char *Src, unsigned char *Dest, int Width, in
 	}
 }
 
-inline void _mm_sort_ab(__m128i &a, __m128i &b){
+inline void _mm_sort_ab(__m128i &a, __m128i &b) {
 	const __m128i min = _mm_min_epu8(a, b);
 	const __m128i max = _mm_max_epu8(a, b);
 	a = min;
@@ -217,7 +218,7 @@ inline void _mm_sort_ab(__m128i &a, __m128i &b){
 void MedianBlur3X3_Fastest(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
 	int Channel = Stride / Width;
 	int BlockSize = 16, Block = ((Width - 2)* Channel) / BlockSize;
-	for (int Y = 1; Y < Height - 1; Y++){
+	for (int Y = 1; Y < Height - 1; Y++) {
 		unsigned char *LineP0 = Src + (Y - 1) * Stride + Channel;
 		unsigned char *LineP1 = LineP0 + Stride;
 		unsigned char *LineP2 = LineP1 + Stride;
@@ -244,8 +245,80 @@ void MedianBlur3X3_Fastest(unsigned char *Src, unsigned char *Dest, int Width, i
 
 			_mm_storeu_si128((__m128i *)LinePD, P4);
 		}
-		
-		for (int X = Block * BlockSize; X < (Width - 2) * Channel; X++, LinePD++){
+
+		for (int X = Block * BlockSize; X < (Width - 2) * Channel; X++, LinePD++) {
+			int Gray0, Gray1, Gray2, Gray3, Gray4, Gray5, Gray6, Gray7, Gray8;
+			Gray0 = LineP0[X - Block * BlockSize - Channel];        Gray1 = LineP0[X - Block * BlockSize];    Gray2 = LineP0[X - Block * BlockSize + Channel];
+			Gray3 = LineP1[X - Block * BlockSize - Channel];        Gray4 = LineP1[X - Block * BlockSize];    Gray5 = LineP1[X - Block * BlockSize + Channel];
+			Gray6 = LineP2[X - Block * BlockSize - Channel];        Gray7 = LineP2[X - Block * BlockSize];    Gray8 = LineP2[X - Block * BlockSize + Channel];
+
+			if (Gray1 > Gray2) Swap(Gray1, Gray2);
+			if (Gray4 > Gray5) Swap(Gray4, Gray5);
+			if (Gray7 > Gray8) Swap(Gray7, Gray8);
+			if (Gray0 > Gray1) Swap(Gray0, Gray1);
+			if (Gray3 > Gray4) Swap(Gray3, Gray4);
+			if (Gray6 > Gray7) Swap(Gray6, Gray7);
+			if (Gray1 > Gray2) Swap(Gray1, Gray2);
+			if (Gray4 > Gray5) Swap(Gray4, Gray5);
+			if (Gray7 > Gray8) Swap(Gray7, Gray8);
+			if (Gray0 > Gray3) Swap(Gray0, Gray3);
+			if (Gray5 > Gray8) Swap(Gray5, Gray8);
+			if (Gray4 > Gray7) Swap(Gray4, Gray7);
+			if (Gray3 > Gray6) Swap(Gray3, Gray6);
+			if (Gray1 > Gray4) Swap(Gray1, Gray4);
+			if (Gray2 > Gray5) Swap(Gray2, Gray5);
+			if (Gray4 > Gray7) Swap(Gray4, Gray7);
+			if (Gray4 > Gray2) Swap(Gray4, Gray2);
+			if (Gray6 > Gray4) Swap(Gray6, Gray4);
+			if (Gray4 > Gray2) Swap(Gray4, Gray2);
+
+			LinePD[X] = Gray4;
+			LineP0 += 1;
+			LineP1 += 1;
+			LineP2 += 1;
+		}
+	}
+}
+
+inline void _mm_sort_AB(__m256i &a, __m256i &b) {
+	const __m256i min = _mm256_min_epu8(a, b);
+	const __m256i max = _mm256_max_epu8(a, b);
+	a = min;
+	b = max;
+}
+
+void MedianBlur3X3_Fastest_AVX(unsigned char *Src, unsigned char *Dest, int Width, int Height, int Stride) {
+	int Channel = Stride / Width;
+	int BlockSize = 32, Block = ((Width - 2)* Channel) / BlockSize;
+	for (int Y = 1; Y < Height - 1; Y++) {
+		unsigned char *LineP0 = Src + (Y - 1) * Stride + Channel;
+		unsigned char *LineP1 = LineP0 + Stride;
+		unsigned char *LineP2 = LineP1 + Stride;
+		unsigned char *LinePD = Dest + Y * Stride + Channel;
+		for (int X = 0; X < Block * BlockSize; X += BlockSize, LineP0 += BlockSize, LineP1 += BlockSize, LineP2 += BlockSize, LinePD += BlockSize)
+		{
+			__m256i P0 = _mm256_loadu_si256((const __m256i*)(LineP0 - Channel));
+			__m256i P1 = _mm256_loadu_si256((const __m256i*)(LineP0 - 0));
+			__m256i P2 = _mm256_loadu_si256((const __m256i*)(LineP0 + Channel));
+			__m256i P3 = _mm256_loadu_si256((const __m256i*)(LineP1 - Channel));
+			__m256i P4 = _mm256_loadu_si256((const __m256i*)(LineP1 - 0));
+			__m256i P5 = _mm256_loadu_si256((const __m256i*)(LineP1 + Channel));
+			__m256i P6 = _mm256_loadu_si256((const __m256i*)(LineP2 - Channel));
+			__m256i P7 = _mm256_loadu_si256((const __m256i*)(LineP2 - 0));
+			__m256i P8 = _mm256_loadu_si256((const __m256i*)(LineP2 + Channel));
+
+			_mm_sort_AB(P1, P2);		_mm_sort_AB(P4, P5);		_mm_sort_AB(P7, P8);
+			_mm_sort_AB(P0, P1);		_mm_sort_AB(P3, P4);		_mm_sort_AB(P6, P7);
+			_mm_sort_AB(P1, P2);		_mm_sort_AB(P4, P5);		_mm_sort_AB(P7, P8);
+			_mm_sort_AB(P0, P3);		_mm_sort_AB(P5, P8);		_mm_sort_AB(P4, P7);
+			_mm_sort_AB(P3, P6);		_mm_sort_AB(P1, P4);		_mm_sort_AB(P2, P5);
+			_mm_sort_AB(P4, P7);		_mm_sort_AB(P4, P2);		_mm_sort_AB(P6, P4);
+			_mm_sort_AB(P4, P2);
+
+			_mm256_storeu_si256((__m256i *)LinePD, P4);
+		}
+
+		for (int X = Block * BlockSize; X < (Width - 2) * Channel; X++, LinePD++) {
 			int Gray0, Gray1, Gray2, Gray3, Gray4, Gray5, Gray6, Gray7, Gray8;
 			Gray0 = LineP0[X - Block * BlockSize - Channel];        Gray1 = LineP0[X - Block * BlockSize];    Gray2 = LineP0[X - Block * BlockSize + Channel];
 			Gray3 = LineP1[X - Block * BlockSize - Channel];        Gray4 = LineP1[X - Block * BlockSize];    Gray5 = LineP1[X - Block * BlockSize + Channel];
@@ -290,11 +363,11 @@ int main() {
 	int64 st = cvGetTickCount();
 	for (int i = 0; i <10; i++) {
 		//Mat temp = MaxFilter(src, Radius);
-		MedianBlur3X3_Fastest(Src, Dest, Width, Height, Stride);
+		MedianBlur3X3_Fastest_AVX(Src, Dest, Width, Height, Stride);
 	}
 	double duration = (cv::getTickCount() - st) / cv::getTickFrequency() * 100;
 	printf("%.5f\n", duration);
-	MedianBlur3X3_Fastest(Src, Dest, Width, Height, Stride);
+	MedianBlur3X3_Fastest_AVX(Src, Dest, Width, Height, Stride);
 	Mat dst(Height, Width, CV_8UC3, Dest);
 	imshow("origin", src);
 	imshow("result", dst);
