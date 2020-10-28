@@ -356,10 +356,13 @@ void _Sobel(unsigned char* Src, const int32_t Width, const int32_t Height, const
 				__m256i ResultL = _mm256_cvtps_epi32(_mm256_sqrt_ps(_mm256_cvtepi32_ps(_mm256_madd_epi16(GXYL, GXYL))));
 				__m256i ResultH = _mm256_cvtps_epi32(_mm256_sqrt_ps(_mm256_cvtepi32_ps(_mm256_madd_epi16(GXYH, GXYH))));
 
-				__m256i Result = _mm256_packus_epi16(_mm256_packus_epi32(ResultL, ResultH), Zero);
+				//__m256i Result = _mm256_packus_epi16(_mm256_packus_epi32(ResultL, ResultH), Zero);
 
-				__m128i Ans = _mm256_castsi256_si128(Result);
-				_mm_storeu_si128((__m128i *)(LinePD + X), Ans);
+				__m128i Ans1 = _mm256_castsi256_si128(ResultL);
+				_mm_storeu_si128((__m128i *)(LinePD + X), Ans1);
+				
+				__m128i Ans2 = _mm256_castsi256_si128(ResultL);
+				_mm_storeu_si128((__m128i *)(LinePD + X + 8), Ans2);
 			}
 
 			for (int X = Block * BlockSize; X < Width * 3; X++)
